@@ -8,7 +8,7 @@ public:
     float GetSplitGain(size_t splitId, size_t minLeafSize) const;
 
 private:
-    std::vector<float> Sums;
-    std::vector<size_t> Counts;
+    std::vector<std::vector<float>> Sums;
+    std::vector<std::vector<size_t>> Counts;
     size_t Size = 0;
 };
