@@ -3,9 +3,7 @@
 #include "algo/binarization.h"
 #include "algo/defines.h"
 #include "algo/pool.h"
-#include "algo/split.h"
 #include <algo/odt.h>
-#include "algo/tree.h"
 #include "algo/model.h"
 
 #include <iostream>

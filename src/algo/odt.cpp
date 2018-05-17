@@ -1,5 +1,7 @@
 #include "odt.h"
 
+#include "partitioning.h"
+
 #include <vector>
 
 TObliviousDecisionTree TObliviousDecisionTree::Fit(const TPool& pool, const TSplits& splits, size_t maxDepth, size_t minCount, float sampleRate) {
@@ -37,7 +39,7 @@ TObliviousDecisionTree TObliviousDecisionTree::Fit(const TPool& pool, const TSpl
             std::vector<TPartitioning> ps;
             ps.reserve((lastPart - firstPart + 1));
             for (size_t partId = firstPart; partId <= lastPart; partId++) {
-                ps.emplace_back(featureId, parts[partId], pool, splits[featureId].size());
+                ps.emplace_back(pool, parts[partId], featureId, splits[featureId].size());
             }
 
             for (size_t splitId = 0; splitId < splits[featureId].size(); splitId++) {

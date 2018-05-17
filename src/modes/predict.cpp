@@ -3,18 +3,16 @@
 #include "algo/binarization.h"
 #include "algo/defines.h"
 #include "algo/pool.h"
-#include "algo/split.h"
-#include "algo/tree.h"
 #include "algo/model.h"
 
 #include <iostream>
 #include <numeric>
 #include <fstream>
 
-void PredictMode::Run(const std::string& path, const std::string& model_file, const std::string& output_file) {
+void PredictMode::Run(const TPredictConfig& config) {
     std::cout << "Predict" << std::endl;
 
-    std::cout << "Loading Dataset" << path << std::endl;
+    std::cout << "Loading Dataset" << config.TestData << std::endl;
 
     TPool pool;
     TBinarizer binarizer;
@@ -22,9 +20,9 @@ void PredictMode::Run(const std::string& path, const std::string& model_file, co
 
     std::vector<std::vector<float>> splits;
     std::vector<std::unordered_map<std::string, size_t>> hashes;
-    model.DeSerialize(model_file, hashes, splits);
+    model.DeSerialize(config.Model, hashes, splits);
 
-    pool = binarizer.BinarizeTestData(LoadTestingPool(path, hashes), splits);
+    pool = binarizer.BinarizeTestData(LoadTestingPool(config.TestData, hashes), splits);
 
     std::cout << "Done" << std::endl;
     std::cout << "Raw features: " << pool.RawFeatureCount << std::endl;
@@ -35,9 +33,9 @@ void PredictMode::Run(const std::string& path, const std::string& model_file, co
 
     auto predictions = model.Predict(std::move(pool));
 
-    std::cout << "Writing to file: " << output_file << std::endl;
+    std::cout << "Writing to file: " << config.Output << std::endl;
 
-    std::ofstream out(output_file);
+    std::ofstream out(config.Output);
     for (const auto& val : predictions) {
         //std::cout << val << std::endl;
         out << val << std::endl;

@@ -67,7 +67,12 @@ int main(int argc, char** argv) {
                 return 1;
             }
 
-            PredictMode::Run(args::get(input_file), args::get(model_file), args::get(output_file));
+            TPredictConfig config;
+            config.TestData = args::get(input_file);
+            config.Model = args::get(model_file);
+            config.Output = args::get(output_file);
+
+            PredictMode::Run(config);
         }
     }
     catch (const args::Help&) {

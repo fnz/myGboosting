@@ -1,7 +1,6 @@
 #pragma once
 
 #include "binarization.h"
-#include "tree.h"
 #include "odt.h"
 #include "config.h"
 
