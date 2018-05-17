@@ -3,11 +3,10 @@
 #include "modes/predict.h"
 #include "modes/train.h"
 
-
 #include <iostream>
 #include <fstream>
 #include <algo/config.h>
-
+#include <omp.h>
 
 int main(int argc, char** argv) {
     args::ArgumentParser parser("mini Gradient Boosting utility");
@@ -23,13 +22,15 @@ int main(int argc, char** argv) {
     args::ValueFlag<std::string> model_file(arguments, "path", "model for predict", { "model" });
     args::ValueFlag<std::string> target_column(arguments, "column name", "target column name", { "target" });
     args::ValueFlag<size_t> iterations(arguments, "iterations amount", "number of trees in ensemble", { "iterations" }, 100);
-    args::ValueFlag<float> learning_rate(arguments, "learning-rate", "trees regularization", { "learning_rate" }, 1.0);
-    args::ValueFlag<float> sample_rate(arguments, "sample-rate",
+    args::ValueFlag<float> learning_rate(arguments, "learning_rate", "trees regularization", { "learning_rate" }, 1.0);
+    args::ValueFlag<float> sample_rate(arguments, "sample_rate",
                                        "percentage of rows for each tree (0 to 1.0)", { "sample_rate" }, 0.66);
     args::ValueFlag<size_t> depth(arguments, "tree depth", "decision tree max depth", { "depth" }, 6);
     args::ValueFlag<size_t> max_bins(arguments, "humber of bins", "max number of bins in histogram", { "max_bins" }, 10);
     args::ValueFlag<size_t> min_leaf_count(arguments, "min leaf size",
                                         "min number of samples in leaf node", { "min_leaf_count" }, 10);
+    args::ValueFlag<size_t> num_threads(arguments, "number of threads",
+                                           "number of threads to use in parallel calculations", { "num_threads" }, 8);
     args::HelpFlag h(arguments, "help", "help", { 'h', "help" });
     //args::PositionalList<std::string> pathsList(arguments, "paths", "files to commit");
 
@@ -45,6 +46,10 @@ int main(int argc, char** argv) {
             std::cout << "Model file is not set" << std::endl;
             return 1;
         }
+
+        auto threads = args::get(num_threads);
+        std::cout << "Number of threads: " << threads << std::endl;
+        omp_set_num_threads(threads);
 
         if (fit) {
             TFitConfig config;

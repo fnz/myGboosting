@@ -15,13 +15,16 @@ message(${CURRENT_SOURCE_FILES})
 
 set(SOURCE_FILES ${SOURCE_FILES} ${CURRENT_SOURCE_FILES})
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_COMPILER /Users/victor-k/Downloads/clang+llvm-6.0.0-x86_64-apple-darwin/bin/clang++)
+set(CMAKE_C_COMPILER /Users/victor-k/Downloads/clang+llvm-6.0.0-x86_64-apple-darwin/bin/clang)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD} -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD} -Wall -Wextra -Wpedantic -fopenmp")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 
 set(CMAKE_EXE_LINKER_FLAGS "-L/usr/local/lib -lprotobuf")
 

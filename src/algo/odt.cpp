@@ -3,28 +3,63 @@
 #include "partitioning.h"
 
 #include <vector>
+#include <iostream>
+#include <omp.h>
 
-TObliviousDecisionTree TObliviousDecisionTree::Fit(const TPool& pool, const TSplits& splits, size_t maxDepth, size_t minCount, float sampleRate) {
+static float getPrediction(size_t partId, const TPool& pool, const std::vector<std::vector<size_t>>& parts) {
+    if (parts[partId].empty()) {
+        return getPrediction(partId / 2, pool, parts);
+    } else {
+        float sum = 0.0;
+        for (size_t id : parts[partId]) {
+            sum += pool.Target[id];
+        }
+        sum /= float(parts[partId].size());
+        return sum;
+    }
+}
+
+TObliviousDecisionTree
+TObliviousDecisionTree::Fit(const TPool& pool, const TSplits& splits, size_t maxDepth, size_t minCount,
+                            float sampleRate) {
     TObliviousDecisionTree tree;
+    auto size = (size_t(1) << (maxDepth + 1));
+    std::vector<std::vector<size_t>> parts(size);
+    std::vector<bool> used(pool.BinarizedFeatureCount, false);
 
-    auto size = (size_t(1) << maxDepth);
-    std::vector<std::vector<size_t>> parts(2*size);
+    std::vector<TPartitioning> ps;
+    ps.reserve(size);
+    TPartitioning partitioning(splits);
+    for (size_t i = 0; i < size; i++) {
+        ps.push_back(partitioning);
+    }
 
     std::vector<size_t> ids;
-    for (size_t i = 0; i < pool.Size; i++) {
-        ids.push_back(i);
+    if (sampleRate == 1.0) {
+        for (size_t i = 0; i < pool.Size; i++) {
+            ids.push_back(i);
+        }
+    } else {
+        for (size_t i = 0; i < pool.Size; i++) {
+            float coin = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);;
+            if (coin < sampleRate) {
+                ids.push_back(i);
+            }
+        }
     }
 
     parts[0] = std::move(ids);
+    ps[0].BuildFromIds(parts[0], pool, used, sampleRate == 1.0);
 
     size_t firstPart = 0;
     size_t lastPart = 0;
 
     size_t depth = 1;
 
-    std::vector<bool> used(pool.BinarizedFeatureCount, false);
-    for (; depth <= maxDepth; depth++) {
+    omp_lock_t lock;
+    omp_init_lock(&lock);
 
+    for (; depth <= maxDepth; depth++) {
         firstPart = (size_t(1) << (depth - 1)) - 1;
         lastPart = (size_t(1) << depth) - 2;
 
@@ -32,26 +67,25 @@ TObliviousDecisionTree TObliviousDecisionTree::Fit(const TPool& pool, const TSpl
         size_t bestFeature = 0;
         size_t bestSplit = 0;
 
+        #pragma omp parallel for
         for (size_t featureId = 0; featureId < pool.BinarizedFeatureCount; featureId++) {
             if (used[featureId]) {
                 continue;
             }
-            std::vector<TPartitioning> ps;
-            ps.reserve((lastPart - firstPart + 1));
-            for (size_t partId = firstPart; partId <= lastPart; partId++) {
-                ps.emplace_back(pool, parts[partId], featureId, splits[featureId].size());
-            }
 
             for (size_t splitId = 0; splitId < splits[featureId].size(); splitId++) {
                 float gain = 0.0;
-                for (const auto& partition : ps) {
-                    gain += partition.GetSplitGain(splitId, minCount);
+                for (size_t partId = firstPart; partId <= lastPart; partId++) {
+                    gain += ps[partId].GetSplitGain(featureId, splitId, minCount);
                 }
+
+//                omp_set_lock(&lock);
                 if (gain > maxGain) {
                     maxGain = gain;
                     bestFeature = featureId;
                     bestSplit = splitId;
                 }
+//                omp_unset_lock(&lock);
             }
         }
 
@@ -63,31 +97,55 @@ TObliviousDecisionTree TObliviousDecisionTree::Fit(const TPool& pool, const TSpl
         tree.Splits.push_back(bestSplit);
         used[bestFeature] = true;
 
-        for (size_t partId = firstPart; partId <= lastPart; partId++) {
-            parts[2 * partId + 1].reserve(parts[partId].size());
-            parts[2 * partId + 2].reserve(parts[partId].size());
+        #pragma omp parallel for
+        for (size_t parentPartId = firstPart; parentPartId <= lastPart; parentPartId++) {
+            size_t leftPartId = 2 * parentPartId + 1;
+            size_t rightPartId = 2 * parentPartId + 2;
 
-            for (size_t id : parts[partId]) {
+            parts[leftPartId].reserve(parts[parentPartId].size());
+            parts[rightPartId].reserve(parts[parentPartId].size());
+
+            for (size_t id : parts[parentPartId]) {
                 if (pool.Features[bestFeature][id] <= bestSplit) {
-                    parts[2 * partId + 1].push_back(id);
+                    parts[leftPartId].push_back(id);
                 } else {
-                    parts[2 * partId + 2].push_back(id);
+                    parts[rightPartId].push_back(id);
                 }
             }
+
+            if (depth != maxDepth) {
+                size_t minPartId;
+                size_t maxPartId;
+                if (parts[leftPartId].empty()) {
+                    ps[rightPartId] = ps[parentPartId];
+                } else if (parts[rightPartId].empty()) {
+                    ps[leftPartId] = ps[parentPartId];
+                } else {}
+                if (parts[leftPartId].size() < parts[rightPartId].size()) {
+                    minPartId = leftPartId;
+                    maxPartId = rightPartId;
+                } else {
+                    minPartId = rightPartId;
+                    maxPartId = leftPartId;
+                }
+                ps[minPartId].BuildFromIds(parts[minPartId], pool, used);
+                ps[maxPartId].BuildFromRelatives(ps[parentPartId], ps[minPartId], used);
+            }
+
         }
     }
+
+    omp_destroy_lock(&lock);
 
     tree.Values.resize(size_t(1) << depth);
 
     firstPart = (size_t(1) << (depth - 1)) - 1;
     lastPart = (size_t(1) << depth) - 2;
 
+    #pragma omp parallel for
     for (size_t partId = firstPart; partId <= lastPart; partId++) {
         size_t valueId = partId - firstPart;
-        for (size_t id : parts[partId]) {
-            tree.Values[valueId] += pool.Target[id];
-        }
-        tree.Values[valueId] /= float(parts[partId].size());
+        tree.Values[valueId] = getPrediction(partId, pool, parts);
     }
 
     return tree;

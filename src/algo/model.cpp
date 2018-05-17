@@ -1,6 +1,8 @@
 #include "model.h"
 #include "proto/model.pb.h"
 #include "odt.h"
+
+#include <iostream>
 #include <fstream>
 #include <numeric>
 
@@ -27,8 +29,9 @@ void TModel::Fit(TPool&& pool, const TFitConfig& config) {
     TTarget target(pool.Target);
 
     LearningRate = 1.0;
-    clock_t begin = clock();
+
     for (size_t iteration = 0; iteration < config.Iterations; ++iteration) {
+        clock_t begin = clock();
         Trees.push_back(TObliviousDecisionTree::Fit(pool, Binarizer.Splits, config.Depth, config.MinLeafSize, config.SampleRate));
         clock_t end = clock();
         double seconds =  double(end - begin) / CLOCKS_PER_SEC;
@@ -36,19 +39,21 @@ void TModel::Fit(TPool&& pool, const TFitConfig& config) {
         const auto& tree = Trees.back();
 
         //replacing our target by gradient of current step
+        #pragma omp parallel for
         for (size_t i = 0; i < pool.Size; ++i) {
             auto x = LearningRate*tree.Predict(pool.Rows[i]);
             pool.Target[i] -= x;
             predictions[i] += x;
         }
 
-        std::cout << iteration << " " << seconds << " " << MSE(target, predictions) << std::endl;
+        std::cout << iteration + 1 << " " << seconds << " " << MSE(target, predictions) << std::endl;
     }
 }
 
 TTarget TModel::Predict(const TPool& pool) const {
     TTarget predictions(pool.Size, 0.0);
     for (const auto& tree : Trees) {
+        #pragma omp parallel for
         for (size_t i = 0; i < pool.Size; ++i) {
             predictions[i] += LearningRate*tree.Predict(pool.Rows[i]);
         }

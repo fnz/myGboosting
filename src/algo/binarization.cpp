@@ -1,8 +1,10 @@
 #include "binarization.h"
 #include "defines.h"
 
-#include <vector>
+#include <algorithm>
 #include <iostream>
+#include <tgmath.h>
+#include <vector>
 
 std::vector<float> BuildSplits(const TRawFeature& data, size_t bins) {
     TRawFeature sorted(data);
