@@ -4,24 +4,25 @@
 #include "algo/defines.h"
 #include "algo/pool.h"
 #include "algo/split.h"
+#include <algo/odt.h>
 #include "algo/tree.h"
 #include "algo/model.h"
 
 #include <iostream>
 #include <numeric>
 #include <sstream>
+#include <ctime>
 
-void TrainMode::Run(const std::string& path, const int iterations, const float lrate, const int depth,
-                    const float sample_rate, const int max_bins, const int min_leaf_count,
-                    const std::string& output_file) {
+void TrainMode::Run(const TFitConfig& config) {
+
     std::cout << "Train" << std::endl;
 
-    std::cout << "Loading " << path << std::endl;
+    std::cout << "Loading " << config.TrainData << std::endl;
 
     TPool pool;
     TBinarizer binarizer;
 
-    pool = binarizer.Binarize(LoadTrainingPool(path), max_bins);
+    pool = binarizer.Binarize(LoadTrainingPool(config.TrainData), config.MaxBins);
 
     std::cout << "Done" << std::endl;
     std::cout << "Raw features: " << pool.RawFeatureCount << std::endl;
@@ -29,8 +30,8 @@ void TrainMode::Run(const std::string& path, const int iterations, const float l
     std::cout << "Size: " << pool.Size << std::endl;
 
     TModel model(std::move(binarizer));
-    model.Fit(std::move(pool), lrate, iterations, sample_rate, depth, min_leaf_count);
+    model.Fit(std::move(pool), config);
 
-    std::cout << "Writing to file: " << output_file << std::endl;
-    model.Serialize(output_file, pool);
+    std::cout << "Saving model to " << config.Model << std::endl;
+    model.Serialize(config.Model, pool);
 }

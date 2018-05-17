@@ -9,7 +9,7 @@ import random
 
 
 def split_data_to_train_and_test(set_dir, work_dir, subsample_n, test_part, has_header=False, seed=42):
-    f = open(os.path.join(set_dir, "data.csv"))
+    f = open(os.path.join(set_dir, "iris.csv"))
     header = None
     if has_header:
         header = f.readline()[:-1]
@@ -53,8 +53,8 @@ if __name__ == "__main__":
 
     import argparse
     parser = argparse.ArgumentParser(description='Trains model on given dataset then evaluates on it')
-    parser.add_argument('-s', '--set', help='Dir with data.csv and columns.csv (optional)', default=None)
-    parser.add_argument('-H', '--has-header', help='Specifie if data files has header line', action='store_true')
+    parser.add_argument('-s', '--set', help='Dir with iris.csv and columns.csv (optional)', default=None)
+    parser.add_argument('-H', '--has-header', help='Specifie if iris files has header line', action='store_true')
     parser.add_argument('--target', help='Target column name. Unused if no column file specified. '
                                          'Default: target', default="target")
 

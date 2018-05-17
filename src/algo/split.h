@@ -4,9 +4,9 @@
 
 #include <vector>
 
-float Mean(const TTarget& data, const std::vector<char>& mask);
+float Mean(const TTarget& data, const TMask& mask);
 
-float Variance(const TTarget& data, const std::vector<char>& mask);
+float Variance(const TTarget& data, const TMask& mask);
 
 std::pair<float, float> GetRange(const TFeature& data, const TMask& mask);
 

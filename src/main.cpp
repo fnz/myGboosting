@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algo/config.h>
 
 
 int main(int argc, char** argv) {
@@ -19,48 +20,50 @@ int main(int argc, char** argv) {
     args::ValueFlag<std::string> column_names_file(arguments, "path",
                                                    "file containing dataset column names",  { "column_names" });
     args::ValueFlag<std::string> output_file(arguments, "path", "output for train/predict", { "output" });
-    args::ValueFlag<std::string> model_file(arguments, "path", "model for predict", { "model-path" });
+    args::ValueFlag<std::string> model_file(arguments, "path", "model for predict", { "model" });
     args::ValueFlag<std::string> target_column(arguments, "column name", "target column name", { "target" });
-    args::ValueFlag<int> iterations(arguments, "iterations amount", "number of trees in ensemble", { "iterations" }, 100);
-    args::ValueFlag<float> learning_rate(arguments, "learning-rate", "trees regularization", { "learning-rate" }, 1.0);
+    args::ValueFlag<size_t> iterations(arguments, "iterations amount", "number of trees in ensemble", { "iterations" }, 100);
+    args::ValueFlag<float> learning_rate(arguments, "learning-rate", "trees regularization", { "learning_rate" }, 1.0);
     args::ValueFlag<float> sample_rate(arguments, "sample-rate",
-                                       "percentage of rows for each tree (0 to 1.0)", { "sample-rate" }, 0.66);
-    args::ValueFlag<int> depth(arguments, "tree depth", "decision tree max depth", { "depth" }, 6);
-    args::ValueFlag<int> max_bins(arguments, "humber of bins", "max number of bins in histogram", { "max_bins" }, 10);
-    args::ValueFlag<int> min_leaf_count(arguments, "min leaf size",
+                                       "percentage of rows for each tree (0 to 1.0)", { "sample_rate" }, 0.66);
+    args::ValueFlag<size_t> depth(arguments, "tree depth", "decision tree max depth", { "depth" }, 6);
+    args::ValueFlag<size_t> max_bins(arguments, "humber of bins", "max number of bins in histogram", { "max_bins" }, 10);
+    args::ValueFlag<size_t> min_leaf_count(arguments, "min leaf size",
                                         "min number of samples in leaf node", { "min_leaf_count" }, 10);
     args::HelpFlag h(arguments, "help", "help", { 'h', "help" });
     //args::PositionalList<std::string> pathsList(arguments, "paths", "files to commit");
 
     try {
         parser.ParseCLI(argc, argv);
+
+        if (args::get(input_file).empty()) {
+            std::cout << "Input file is not set" << std::endl;
+            return 1;
+        }
+
+        if (args::get(model_file).empty()) {
+            std::cout << "Model file is not set" << std::endl;
+            return 1;
+        }
+
         if (fit) {
-            if (args::get(input_file) == "") {
-                std::cout << "input file missing: " + input_file.Name() << std::endl;
-                return 1;
-            }
+            TFitConfig config;
+            config.TrainData = args::get(input_file);
+            config.ColumnNames = args::get(column_names_file);
+            config.TargetName = args::get(target_column);
+            config.Model = args::get(model_file);
+            config.Iterations = args::get(iterations);
+            config.Depth = args::get(depth);
+            config.MaxBins = args::get(max_bins);
+            config.MinLeafSize = args::get(min_leaf_count);
+            config.LearningRate = args::get(learning_rate);
+            config.SampleRate = args::get(sample_rate);
 
-            if (args::get(output_file) == "") {
-                std::cout << "output file missing: " + output_file.Name() << std::endl;
-                return 1;
-            }
+            TrainMode::Run(config);
 
-            TrainMode::Run(args::get(input_file), args::get(iterations), args::get(learning_rate), args::get(depth),
-                           args::get(sample_rate), args::get(max_bins), args::get(min_leaf_count),
-                           args::get(output_file));
         } else if (predict) {
-            if (args::get(input_file) == "") {
-                std::cout << "input file missing: " + input_file.Name() << std::endl;
-                return 1;
-            }
-
-            if (args::get(model_file) == "") {
-                std::cout << "model file missing: " + model_file.Name() << std::endl;
-                return 1;
-            }
-
-            if (args::get(output_file) == "") {
-                std::cout << "output file missing: " + output_file.Name() << std::endl;
+            if (args::get(output_file).empty()) {
+                std::cout << "Output file is not set" << std::endl;
                 return 1;
             }
 

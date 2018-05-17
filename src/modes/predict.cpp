@@ -33,7 +33,6 @@ void PredictMode::Run(const std::string& path, const std::string& model_file, co
 
     //TModel model(std::move(binarizer));
 
-
     auto predictions = model.Predict(std::move(pool));
 
     std::cout << "Writing to file: " << output_file << std::endl;

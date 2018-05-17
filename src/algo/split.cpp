@@ -32,10 +32,13 @@ size_t GetOptimalSplit(const TFeatures& features, const TTarget& target, const T
     size_t split = 0;
     float minVariance = std::numeric_limits<float>::max();
 
+    static TMask mask1 = mask;
+    static TMask mask2 = mask;
+
     for (size_t featureId = 0; featureId < features.size(); ++featureId) {
         const auto& data = features[featureId];
-        TMask mask1 = mask;
-        TMask mask2 = mask;
+        mask1 = mask;
+        mask2 = mask;
 
         size_t count1 = 0;
         size_t count2 = 0;

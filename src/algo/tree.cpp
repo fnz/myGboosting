@@ -29,7 +29,7 @@ TDecisionTree TDecisionTree::Fit(const TPool& pool, size_t maxDepth, size_t minC
     std::random_device rd{}; // use to seed the rng
     std::mt19937 rng{rd()}; // rng
     std::bernoulli_distribution d(sample_rate);
-    for (int i = 0; i < pool.Size; ++i) {
+    for (size_t i = 0; i < pool.Size; ++i) {
         mask[i] = d(rng);
     }
 

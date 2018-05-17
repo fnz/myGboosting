@@ -3,14 +3,14 @@
 #include<string>
 #include <vector>
 
-// represents a single data column
+// represents a single iris column
 using TRawFeature = std::vector<float>;
 
 // raw features
 using TRawFeatures = std::vector<TRawFeature>;
 
 // binarized form of a feature
-using TFeature = std::vector<char>;
+using TFeature = std::vector<uint8_t>;
 
 // several feature columns in a vector
 using TFeatures = std::vector<TFeature>;
@@ -19,7 +19,7 @@ using TFeatures = std::vector<TFeature>;
 using TTarget = std::vector<float>;
 
 // used for tree fitting
-using TMask = std::vector<char>;
+using TMask = std::vector<uint8_t>;
 
 // feature names
 using TNames = std::vector<std::string>;
@@ -28,7 +28,7 @@ using TNames = std::vector<std::string>;
 using TRawFeatureRow = std::vector<float>;
 
 // binarized form
-using TFeatureRow = std::vector<char>;
+using TFeatureRow = std::vector<uint8_t>;
 
 // several rows
 using TFeatureRows = std::vector<TFeatureRow>;
@@ -41,3 +41,5 @@ struct HistogramBin {
 
 // histogram
 using THistogram = std::vector<HistogramBin>;
+
+using TSplits = std::vector<std::vector<float>>;

@@ -2,13 +2,15 @@
 
 #include "binarization.h"
 #include "tree.h"
+#include "odt.h"
+#include "config.h"
 
 class TModel {
 public:
     TModel();
     explicit TModel(TBinarizer&& binarizer);
 
-    void Fit(TPool&& pool, float rate, float iterations, float sample_rate, int depth, int min_leaf_count);
+    void Fit(TPool&& pool, const TFitConfig& config);
     TTarget Predict(const TPool& pool) const;
 //    TTarget Predict(const TRawPool& raw) const;
     void Serialize(const std::string& filename, const TPool& pool);
@@ -19,6 +21,6 @@ public:
 private:
     float LearningRate;
     TBinarizer Binarizer;
-    std::vector<TDecisionTree> Trees;
+    std::vector<TObliviousDecisionTree> Trees;
 };
 
